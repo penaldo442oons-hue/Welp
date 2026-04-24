@@ -1,21 +1,21 @@
-const API = "http://localhost:5000"
+import { API_BASE } from "../config/api.js"
 
 export const getRequests = () =>
-fetch(`${API}/requests`).then(r=>r.json())
+fetch(`${API_BASE}/requests`).then(r=>r.json())
 
 export const createRequest = (data)=>
-fetch(`${API}/requests`,{
+fetch(`${API_BASE}/requests`,{
 method:"POST",
 headers:{ "Content-Type":"application/json" },
 body:JSON.stringify(data)
 })
 
 export const resolveRequest = (id)=>
-fetch(`${API}/requests/${id}/resolve`,{
+fetch(`${API_BASE}/requests/${id}/resolve`,{
 method:"PUT"
 })
 
 export const deleteRequest = (id)=>
-fetch(`${API}/requests/${id}`,{
+fetch(`${API_BASE}/requests/${id}`,{
 method:"DELETE"
 })

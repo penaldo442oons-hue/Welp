@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE } from "../config/api.js";
 
 function TrackRequest(){
 
@@ -6,7 +7,7 @@ const [requests,setRequests]=useState([])
 
 const fetchRequests=async()=>{
 
-const res=await fetch("http://localhost:5000/requests")
+const res=await fetch(`${API_BASE}/requests`)
 const data=await res.json()
 
 setRequests(data)

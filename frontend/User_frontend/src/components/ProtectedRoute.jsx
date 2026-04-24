@@ -3,7 +3,12 @@ import { Navigate, useLocation } from "react-router-dom";
 const USER_TOKEN_KEY = "welp_user_token";
 
 export function getUserToken() {
-  return localStorage.getItem(USER_TOKEN_KEY);
+  const token = localStorage.getItem(USER_TOKEN_KEY);
+  if (!token || token === "null" || token === "undefined") {
+    return null;
+  }
+
+  return token;
 }
 
 export function setUserToken(token) {

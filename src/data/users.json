@@ -6,6 +6,46 @@
     "passwordHash": "$2b$10$u2Chn4rFKvswkj/884Hw6OFLIEV70QTCx.5uYOjUi7c/bDVIH8wCG",
     "subscriptionPlan": "trial",
     "trialEndsAt": 1777594922151,
-    "createdAt": 1776990122151
+    "createdAt": 1776990122151,
+    "loginCount": 1,
+    "lastLoginAt": 1776990122151,
+    "lastSeenAt": 1776990122151
+  },
+  {
+    "id": 1777056773156,
+    "email": "ob35170@gmail.com",
+    "name": "Gilbert",
+    "passwordHash": "$2b$10$Vvo.59S9ZuU7mVFedH6TN.VpPl4n5gPDMUmTgbMDASW6t.CkCXs8G",
+    "subscriptionPlan": "builder",
+    "trialEndsAt": 1777661573156,
+    "createdAt": 1777056773156,
+    "builderActivatedAt": 1777057068387,
+    "loginCount": 3,
+    "lastLoginAt": 1777064440836,
+    "lastSeenAt": 1777064440946
+  },
+  {
+    "id": 1777062555147,
+    "email": "newtest@example.com",
+    "name": "New Test",
+    "passwordHash": "$2b$10$k8jAqpmhHt5k5xapFzcSw.nQhK.Fg9in76FzWYS6vcoKBRwYQ6RL.",
+    "subscriptionPlan": "trial",
+    "trialEndsAt": 1777667355147,
+    "createdAt": 1777062555147,
+    "loginCount": 1,
+    "lastLoginAt": 1777062555147,
+    "lastSeenAt": 1777062555147
+  },
+  {
+    "id": 1777063326415,
+    "email": "codextest+1777063326005@example.com",
+    "name": "Codex Test",
+    "passwordHash": "$2b$10$TltXmk9Gxo3x7bKdmjSIA.S62jmELTll/rtphx2qeO4du8yFVIlBS",
+    "subscriptionPlan": "trial",
+    "trialEndsAt": 1777668126415,
+    "createdAt": 1777063326415,
+    "loginCount": 2,
+    "lastLoginAt": 1777063326877,
+    "lastSeenAt": 1777063326877
   }
 ]

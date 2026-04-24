@@ -6,7 +6,9 @@
     "prompt": "skd",
     "status": "pending",
     "retries": 0,
-    "createdAt": 1776850952922
+    "createdAt": 1776850952922,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776852243172,
@@ -14,7 +16,10 @@
     "prompt": "Create a portfolio website",
     "status": "pending",
     "retries": 0,
-    "createdAt": 1776852243172
+    "createdAt": 1776852243172,
+    "ticket": null,
+    "user": "anonymous",
+    "projectName": ""
   },
   {
     "id": 1776855820325,
@@ -23,7 +28,9 @@
     "prompt": "Contact Admin please",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855820325
+    "createdAt": 1776855820325,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776855827074,
@@ -32,7 +39,9 @@
     "prompt": "Contact Admin please",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855827074
+    "createdAt": 1776855827074,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776855829067,
@@ -41,7 +50,9 @@
     "prompt": "Contact Admin please",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855829068
+    "createdAt": 1776855829068,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776855831147,
@@ -50,7 +61,9 @@
     "prompt": "Contact Admin please",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855831147
+    "createdAt": 1776855831147,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776855833353,
@@ -59,7 +72,9 @@
     "prompt": "Contact Admin please",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855833353
+    "createdAt": 1776855833353,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776855912497,
@@ -68,7 +83,9 @@
     "prompt": "Name Gilbert\nemail PEnaldo442oons@test.com\nCreate a website",
     "status": "processing",
     "retries": 0,
-    "createdAt": 1776855912497
+    "createdAt": 1776855912497,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776869384829,
@@ -77,7 +94,9 @@
     "prompt": "Explain cloud computing",
     "status": "admin-review",
     "retries": 0,
-    "createdAt": 1776869384829
+    "createdAt": 1776869384829,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776902242693,
@@ -86,7 +105,9 @@
     "prompt": "Fixing user frontend",
     "status": "admin-review",
     "retries": 0,
-    "createdAt": 1776902242693
+    "createdAt": 1776902242693,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776988172748,
@@ -95,7 +116,11 @@
     "email": "penaldo442oons@gmail.com",
     "message": "Stripe unlock flow",
     "status": "pending",
-    "createdAt": 1776988172748
+    "createdAt": 1776988172748,
+    "retries": 0,
+    "user": "penaldo442oons@gmail.com",
+    "prompt": "",
+    "projectName": ""
   },
   {
     "id": 1776988215742,
@@ -104,7 +129,9 @@
     "prompt": "An e commerce app",
     "status": "admin-review",
     "retries": 0,
-    "createdAt": 1776988215742
+    "createdAt": 1776988215742,
+    "ticket": null,
+    "projectName": ""
   },
   {
     "id": 1776990358596,
@@ -112,7 +139,55 @@
     "name": "Gilbert",
     "email": "penaldo442oons@gmail.com",
     "message": "Testing AI APIs",
-    "status": "pending",
-    "createdAt": 1776990358596
+    "status": "resolved",
+    "createdAt": 1776990358596,
+    "retries": 0,
+    "user": "penaldo442oons@gmail.com",
+    "prompt": "",
+    "projectName": ""
+  },
+  {
+    "id": 1777056833402,
+    "type": "ai",
+    "user": "ob35170@gmail.com",
+    "prompt": "Build a website",
+    "status": "completed",
+    "retries": 0,
+    "createdAt": 1777056833402,
+    "ticket": null,
+    "projectName": ""
+  },
+  {
+    "id": 1777056874730,
+    "type": "ai",
+    "user": "ob35170@gmail.com",
+    "prompt": "Define dance",
+    "status": "completed",
+    "retries": 0,
+    "createdAt": 1777056874730,
+    "ticket": null,
+    "projectName": ""
+  },
+  {
+    "id": 1777063758662,
+    "type": "ai",
+    "user": "ob35170@gmail.com",
+    "prompt": "Build me a SaaS dashboard with auth and billing",
+    "projectName": "Build Me A Saas",
+    "status": "completed",
+    "retries": 0,
+    "createdAt": 1777063758662,
+    "ticket": null
+  },
+  {
+    "id": 1777063765996,
+    "type": "ai",
+    "user": "ob35170@gmail.com",
+    "prompt": "Map an e-commerce app with product pages and checkout",
+    "projectName": "Map An E-commerce App",
+    "status": "completed",
+    "retries": 0,
+    "createdAt": 1777063765996,
+    "ticket": null
   }
 ]

@@ -46,7 +46,7 @@ function Navbar() {
               ].join(" ")
             }
           >
-            Contact
+            Contact Admin
           </NavLink>
           {signedIn ? (
             <button

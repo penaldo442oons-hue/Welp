@@ -1,250 +1,317 @@
 import { useEffect, useState } from "react";
 import StatsCard from "../components/StatsCard";
 import { API_BASE } from "../config/api.js";
+import { handleAdminAuthFailure } from "../lib/adminSession.js";
 
-const requestsUrl = `${API_BASE}/requests?limit=2000&page=1`;
+const tokenHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem("token")}`,
+});
 
-const btn =
-  "inline-flex items-center justify-center rounded-lg border border-white/10 bg-white/[0.06] px-3 py-1.5 text-xs font-semibold text-zinc-200 shadow-welp-inset transition hover:border-white/20 hover:bg-white/10";
-const btnDanger =
-  "inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition hover:bg-red-500/20";
+function formatDate(value) {
+  if (!value) return "Never";
+  return new Date(value).toLocaleString();
+}
 
-function Dashboard() {
-  const [requests, setRequests] = useState([]);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(null);
-  const [aiTasks, setAiTasks] = useState([]);
+function normalizeStatsResponse(data) {
+  if (data?.users && data?.contacts && data?.ai) {
+    return data;
+  }
 
-  const fetchRequests = async () => {
-    try {
-      setError(null);
-      const res = await fetch(requestsUrl);
-      if (!res.ok) throw new Error("Server error");
-      const data = await res.json();
-
-      let allRequests = [];
-      if (data && Array.isArray(data.data)) allRequests = data.data;
-      else if (Array.isArray(data)) allRequests = data;
-      else allRequests = [];
-
-      const normalRequests = allRequests.filter((r) => r.type !== "ai");
-      const aiRequests = allRequests.filter((r) => r.type === "ai");
-
-      setRequests(normalRequests);
-      setAiTasks(aiRequests);
-      setLastUpdated(new Date().toLocaleTimeString());
-      setLoading(false);
-    } catch (err) {
-      console.error("Fetch error:", err);
-      setError("Unable to connect to API server");
-      setRequests([]);
-      setAiTasks([]);
-      setLoading(false);
-    }
+  return {
+    users: {
+      total: Number(data?.totalUsers ?? data?.users ?? data?.total ?? 0),
+      totalLogins: Number(data?.totalLogins ?? 0),
+      active24h: Number(data?.active24h ?? 0),
+      new7d: Number(data?.new7d ?? 0),
+      paid: Number(data?.paidUsers ?? 0),
+    },
+    requests: {
+      total: Number(data?.requests?.total ?? data?.totalRequests ?? data?.total ?? 0),
+      pending: Number(data?.requests?.pending ?? data?.pending ?? 0),
+      resolved: Number(data?.requests?.resolved ?? data?.resolved ?? 0),
+    },
+    ai: {
+      total: Number(data?.ai?.total ?? data?.totalAi ?? 0),
+      completed: Number(data?.ai?.completed ?? data?.completedAi ?? 0),
+      needsReview: Number(data?.ai?.needsReview ?? data?.needsReview ?? 0),
+    },
+    contacts: {
+      total: Number(data?.contacts?.total ?? data?.contactThreads ?? 0),
+      waitingForAdmin: Number(data?.contacts?.waitingForAdmin ?? 0),
+      waitingForUser: Number(data?.contacts?.waitingForUser ?? 0),
+      unreadForAdmin: Number(data?.contacts?.unreadForAdmin ?? data?.unreadInbox ?? 0),
+    },
+    availability: {
+      availableDevelopers: Number(data?.availability?.availableDevelopers ?? data?.availableDevelopers ?? 0),
+      availableUntil: data?.availability?.availableUntil ?? data?.availableUntil ?? null,
+    },
+    recentLogins: Array.isArray(data?.recentLogins) ? data.recentLogins : [],
+    recentRequests: Array.isArray(data?.recentRequests) ? data.recentRequests : [],
+    recentContacts: Array.isArray(data?.recentContacts) ? data.recentContacts : [],
   };
+}
 
-  const resolveRequest = async (id) => {
-    await fetch(`${API_BASE}/requests/${id}/resolve`, { method: "PUT" });
-    fetchRequests();
-  };
-
-  const markPending = async (id) => {
-    await fetch(`${API_BASE}/requests/${id}/pending`, { method: "PUT" });
-    fetchRequests();
-  };
-
-  const deleteRequest = async (id) => {
-    await fetch(`${API_BASE}/requests/${id}`, { method: "DELETE" });
-    fetchRequests();
-  };
-
-  useEffect(() => {
-    fetchRequests();
-    const interval = setInterval(fetchRequests, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const totalRequests = requests.length;
-  const pendingRequests = requests.filter((r) => r.status === "pending").length;
-  const resolvedRequests = requests.filter((r) => r.status === "resolved").length;
-
-  const filteredRequests = requests
-    .filter(
-      (r) =>
-        (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
-        (r.email || "").toLowerCase().includes(search.toLowerCase())
-    )
-    .filter((r) => (statusFilter === "all" ? true : r.status === statusFilter));
-
+function SectionCard({ title, subtitle, children }) {
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col gap-2 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Overview</p>
-          <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Dashboard</h1>
-          {lastUpdated ? (
-            <p className="mt-1 text-xs text-zinc-500">Last updated · {lastUpdated}</p>
-          ) : null}
-        </div>
-        {error ? (
-          <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm text-red-200">{error}</div>
-        ) : null}
-      </header>
-
-      <div className="flex flex-col gap-4 sm:flex-row">
-        <StatsCard title="Total requests" value={totalRequests} color="blue" />
-        <StatsCard title="Pending" value={pendingRequests} color="orange" />
-        <StatsCard title="Resolved" value={resolvedRequests} color="green" />
+    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 shadow-welp ring-1 ring-white/[0.04]">
+      <div className="mb-5">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">{title}</p>
+        {subtitle ? <p className="mt-2 text-sm text-zinc-400">{subtitle}</p> : null}
       </div>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          placeholder="Search name or email…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-welp-accent/50 focus:ring-2 focus:ring-welp-accent/15"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white outline-none focus:border-welp-accent/50"
-        >
-          <option value="all">All statuses</option>
-          <option value="pending">Pending</option>
-          <option value="resolved">Resolved</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <p className="text-sm text-zinc-500">Loading requests…</p>
-      ) : filteredRequests.length === 0 ? (
-        <p className="text-sm text-zinc-500">No requests match your filters.</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02] shadow-welp ring-1 ring-white/[0.04]">
-          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-white/10 bg-black/35 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                <th className="px-4 py-3">Ticket</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Message</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRequests.map((r) => (
-                <tr key={r.id} className="border-b border-white/[0.06] transition hover:bg-white/[0.03]">
-                  <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-zinc-400">{r.ticket ?? r.id}</td>
-                  <td className="px-4 py-3 text-zinc-200">{r.name}</td>
-                  <td className="px-4 py-3 text-zinc-400">{r.email}</td>
-                  <td className="max-w-xs truncate px-4 py-3 text-zinc-400" title={r.message}>
-                    {r.message}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={[
-                        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold",
-                        r.status === "resolved"
-                          ? "bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-500/25"
-                          : "bg-amber-500/15 text-amber-200 ring-1 ring-amber-500/25",
-                      ].join(" ")}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex flex-wrap justify-end gap-2">
-                      {r.status === "pending" ? (
-                        <button type="button" className={btn} onClick={() => resolveRequest(r.id)}>
-                          Resolve
-                        </button>
-                      ) : (
-                        <button type="button" className={btn} onClick={() => markPending(r.id)}>
-                          Mark pending
-                        </button>
-                      )}
-                      <button type="button" className={btnDanger} onClick={() => deleteRequest(r.id)}>
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <section className="space-y-4">
-        <div className="flex items-end justify-between gap-4 border-b border-white/10 pb-3">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Monitor</p>
-            <h2 className="text-lg font-semibold text-white">AI tasks</h2>
-          </div>
-        </div>
-
-        {aiTasks.length === 0 ? (
-          <p className="text-sm text-zinc-500">No AI tasks in the feed.</p>
-        ) : (
-          <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02] shadow-welp ring-1 ring-white/[0.04]">
-            <table className="w-full min-w-[800px] border-collapse text-left text-sm">
-              <thead>
-                <tr className="border-b border-white/10 bg-black/35 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                  <th className="px-4 py-3">ID</th>
-                  <th className="px-4 py-3">User</th>
-                  <th className="px-4 py-3">Prompt</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Retries</th>
-                  <th className="px-4 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {aiTasks.map((task) => (
-                  <tr key={task.id} className="border-b border-white/[0.06] transition hover:bg-white/[0.03]">
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-zinc-400">{task.id}</td>
-                    <td className="px-4 py-3 text-zinc-200">{task.user}</td>
-                    <td className="max-w-md truncate px-4 py-3 text-zinc-400" title={task.prompt}>
-                      {task.prompt}
-                    </td>
-                    <td className="px-4 py-3 text-zinc-300">{task.status}</td>
-                    <td className="px-4 py-3 text-zinc-400">{task.retries}</td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <button
-                          type="button"
-                          className={btn}
-                          onClick={async () => {
-                            await fetch(`${API_BASE}/ai/${task.id}/retry`, { method: "PUT" });
-                            fetchRequests();
-                          }}
-                        >
-                          Retry
-                        </button>
-                        <button
-                          type="button"
-                          className={btn}
-                          onClick={async () => {
-                            await fetch(`${API_BASE}/ai/${task.id}/escalate`, { method: "PUT" });
-                            fetchRequests();
-                          }}
-                        >
-                          Escalate
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-    </div>
+      {children}
+    </section>
   );
 }
 
-export default Dashboard;
+export default function Dashboard() {
+  const [stats, setStats] = useState(null);
+  const [availabilityForm, setAvailabilityForm] = useState({
+    availableDevelopers: 1,
+    durationHours: 1,
+  });
+  const [error, setError] = useState("");
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  const loadStats = async () => {
+    try {
+      setError("");
+      const res = await fetch(`${API_BASE}/admin/stats`, {
+        headers: tokenHeaders(),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (handleAdminAuthFailure(res)) {
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.error || "Could not load dashboard");
+        return;
+      }
+
+      const normalized = normalizeStatsResponse(data);
+      setStats(normalized);
+      setAvailabilityForm((prev) => ({
+        availableDevelopers: normalized.availability?.availableDevelopers || prev.availableDevelopers,
+        durationHours: prev.durationHours,
+      }));
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch {
+      setError("Unable to connect to the API server");
+    }
+  };
+
+  useEffect(() => {
+    void loadStats();
+    const interval = setInterval(loadStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const saveAvailability = async (event) => {
+    event.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/admin/availability`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...tokenHeaders(),
+        },
+        body: JSON.stringify({
+          availableDevelopers: Number(availabilityForm.availableDevelopers),
+          durationHours: Number(availabilityForm.durationHours),
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (handleAdminAuthFailure(res)) {
+        return;
+      }
+
+      if (!res.ok) {
+        setError(data.error || "Could not save availability");
+        return;
+      }
+
+      setStats((current) =>
+        current
+          ? {
+              ...current,
+              availability: data,
+            }
+          : current
+      );
+      setLastUpdated(new Date().toLocaleTimeString());
+    } catch {
+      setError("Could not save availability");
+    }
+  };
+
+  const availability = stats?.availability || {
+    availableDevelopers: 0,
+    availableUntil: null,
+  };
+
+  return (
+    <div className="space-y-8">
+      <header className="flex flex-col gap-3 border-b border-white/10 pb-6 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">Overview</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-white md:text-3xl">Admin overview</h1>
+          <p className="mt-2 max-w-2xl text-sm text-zinc-400">
+            This page is now focused on platform health only. Users, contact-admin threads, and AI reviews each have their own screens.
+          </p>
+        </div>
+        {lastUpdated ? <p className="text-xs text-zinc-500">Updated {lastUpdated}</p> : null}
+      </header>
+
+      {error ? (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      ) : null}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatsCard title="Total users" value={stats?.users?.total ?? 0} color="blue" />
+        <StatsCard title="Total logins" value={stats?.users?.totalLogins ?? 0} color="orange" />
+        <StatsCard title="Unread inbox" value={stats?.contacts?.unreadForAdmin ?? 0} color="green" />
+        <StatsCard title="AI review queue" value={stats?.ai?.needsReview ?? 0} color="orange" />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_1fr]">
+        <SectionCard
+          title="Availability"
+          subtitle="Set how many developers are available and how long that window should remain visible on the frontend."
+        >
+          <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
+            <div className="rounded-2xl border border-[#8ec5ff]/15 bg-[#06111f] p-5">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Live now</div>
+              <div className="mt-4 text-5xl font-semibold text-[#8ec5ff]">{availability.availableDevelopers || 0}</div>
+              <p className="mt-3 text-sm text-white/75">
+                {availability.availableUntil
+                  ? `Visible until ${formatDate(availability.availableUntil)}`
+                  : "No active availability window"}
+              </p>
+            </div>
+
+            <form onSubmit={saveAvailability} className="grid gap-4 md:grid-cols-2">
+              <label className="grid gap-2 text-sm text-zinc-300">
+                Available developers
+                <input
+                  type="number"
+                  min="0"
+                  value={availabilityForm.availableDevelopers}
+                  onChange={(event) =>
+                    setAvailabilityForm((prev) => ({ ...prev, availableDevelopers: event.target.value }))
+                  }
+                  className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-welp-accent/50"
+                />
+              </label>
+              <label className="grid gap-2 text-sm text-zinc-300">
+                Duration in hours
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={availabilityForm.durationHours}
+                  onChange={(event) =>
+                    setAvailabilityForm((prev) => ({ ...prev, durationHours: event.target.value }))
+                  }
+                  className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-welp-accent/50"
+                />
+              </label>
+              <div className="md:col-span-2">
+                <button
+                  type="submit"
+                  className="rounded-xl bg-[#8ec5ff] px-5 py-3 text-sm font-semibold text-[#06111f] transition hover:bg-white"
+                >
+                  Publish availability
+                </button>
+              </div>
+            </form>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="User activity"
+          subtitle="Recent login activity pulled from real user sign-ins."
+        >
+          <div className="space-y-3">
+            {(stats?.recentLogins || []).length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/10 bg-black/20 px-4 py-6 text-sm text-zinc-500">
+                No user login activity yet.
+              </div>
+            ) : (
+              stats.recentLogins.map((user) => (
+                <div key={user.email} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                  <div>
+                    <div className="font-medium text-white">{user.name}</div>
+                    <div className="text-sm text-zinc-500">{user.email}</div>
+                  </div>
+                  <div className="text-right text-sm text-zinc-400">
+                    <div>{user.loginCount} login(s)</div>
+                    <div>{formatDate(user.lastLoginAt)}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </SectionCard>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-2">
+        <SectionCard
+          title="Recent contact-admin threads"
+          subtitle="Direct support requests now live in their own inbox workflow."
+        >
+          <div className="space-y-3">
+            {(stats?.recentContacts || []).length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/10 bg-black/20 px-4 py-6 text-sm text-zinc-500">
+                No contact-admin threads yet.
+              </div>
+            ) : (
+              stats.recentContacts.map((conversation) => (
+                <div key={conversation.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                  <div>
+                    <div className="font-medium text-white">{conversation.subject || "Contact admin"}</div>
+                    <div className="text-sm text-zinc-500">{conversation.userName} - {conversation.userEmail}</div>
+                  </div>
+                  <div className="text-right text-sm text-zinc-400">
+                    <div>{conversation.status}</div>
+                    <div>{conversation.adminUnreadCount} unread</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Recent requests"
+          subtitle="A quick look at standard non-AI requests coming through the platform."
+        >
+          <div className="space-y-3">
+            {(stats?.recentRequests || []).length === 0 ? (
+              <div className="rounded-xl border border-dashed border-white/10 bg-black/20 px-4 py-6 text-sm text-zinc-500">
+                No requests yet.
+              </div>
+            ) : (
+              stats.recentRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-4 py-3">
+                  <div>
+                    <div className="font-medium text-white">{request.name}</div>
+                    <div className="text-sm text-zinc-500">{request.email}</div>
+                  </div>
+                  <div className="text-right text-sm text-zinc-400">
+                    <div>{request.status}</div>
+                    <div>{formatDate(request.createdAt)}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </SectionCard>
+      </div>
+    </div>
+  );
+}

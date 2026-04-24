@@ -10,7 +10,7 @@ function navClass({ isActive }) {
   ].join(" ");
 }
 
-function Sidebar() {
+export default function Sidebar() {
   const navigate = useNavigate();
 
   const logout = () => {
@@ -29,10 +29,16 @@ function Sidebar() {
 
       <nav className="flex flex-1 flex-col gap-1 p-2 pt-5">
         <NavLink to="/dashboard" end className={navClass}>
-          Dashboard
+          Overview
+        </NavLink>
+        <NavLink to="/users" className={navClass}>
+          Users
+        </NavLink>
+        <NavLink to="/inbox" className={navClass}>
+          Contact Inbox
         </NavLink>
         <NavLink to="/admin-queue" className={navClass}>
-          AI queue
+          AI Queue
         </NavLink>
       </nav>
 
@@ -48,5 +54,3 @@ function Sidebar() {
     </aside>
   );
 }
-
-export default Sidebar;

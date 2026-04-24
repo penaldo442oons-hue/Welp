@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE } from "../config/api.js";
 
 function SubmitRequest() {
 
@@ -10,7 +11,7 @@ function SubmitRequest() {
 
     e.preventDefault();
 
-    await fetch("http://localhost:5000/requests",{
+    await fetch(`${API_BASE}/requests`,{
       method:"POST",
       headers:{
         "Content-Type":"application/json"

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "chat-1777063326565",
+    "category": "contact-admin",
+    "userEmail": "codextest+1777063326005@example.com",
+    "userName": "Codex Test",
+    "subject": "",
+    "status": "open",
+    "createdAt": 1777063326565,
+    "updatedAt": 1777063326565,
+    "lastMessageAt": 1777063326565,
+    "lastMessagePreview": "",
+    "adminUnreadCount": 0,
+    "userUnreadCount": 0,
+    "messages": []
+  },
+  {
+    "id": "chat-1777062555317",
+    "category": "contact-admin",
+    "userEmail": "newtest@example.com",
+    "userName": "New Test",
+    "subject": "",
+    "status": "open",
+    "createdAt": 1777062555317,
+    "updatedAt": 1777062555317,
+    "lastMessageAt": 1777062555317,
+    "lastMessagePreview": "",
+    "adminUnreadCount": 0,
+    "userUnreadCount": 0,
+    "messages": []
+  },
+  {
+    "id": "chat-1777056773160",
+    "category": "contact-admin",
+    "userEmail": "ob35170@gmail.com",
+    "userName": "Gilbert",
+    "subject": "",
+    "status": "open",
+    "createdAt": 1777056773160,
+    "updatedAt": 1777068650485,
+    "lastMessageAt": 1777056982059,
+    "lastMessagePreview": "Yes what do you need",
+    "adminUnreadCount": 0,
+    "userUnreadCount": 0,
+    "messages": [
+      {
+        "id": "msg-1777056808768-115a3e",
+        "senderType": "user",
+        "senderLabel": "Gilbert",
+        "content": "Is anyone available",
+        "createdAt": 1777056808768
+      },
+      {
+        "id": "msg-1777056982059-123949",
+        "senderType": "admin",
+        "senderLabel": "admin",
+        "content": "Yes what do you need",
+        "createdAt": 1777056982059
+      }
+    ]
+  }
+]

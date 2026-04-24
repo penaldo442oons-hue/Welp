@@ -3,9 +3,11 @@ import Login from "./pages/Login";
 import AdminLayout from "./layouts/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import AdminQueue from "./pages/AdminQueue";
+import Users from "./pages/Users";
+import Inbox from "./pages/Inbox";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-function App() {
+export default function App() {
   return (
     <Router>
       <div className="relative flex min-h-dvh flex-col text-zinc-100">
@@ -23,6 +25,8 @@ function App() {
               }
             >
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/inbox" element={<Inbox />} />
               <Route path="/admin-queue" element={<AdminQueue />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -32,5 +36,3 @@ function App() {
     </Router>
   );
 }
-
-export default App;

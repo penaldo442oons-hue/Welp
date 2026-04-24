@@ -1,119 +1,287 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { API_BASE } from "../config/api.js";
+import { getUserToken, setUserToken } from "../components/ProtectedRoute.jsx";
 
-function Contact() {
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    message: "",
+const supportTopics = [
+  "Build help",
+  "Custom feature",
+  "Bug or issue",
+  "Billing question",
+];
+
+export default function Contact() {
+  const [availability, setAvailability] = useState({
+    availableDevelopers: 0,
+    availableUntil: null,
+    isAvailable: false,
   });
-  const [status, setStatus] = useState("idle"); // idle | sending | sent | error
+  const [conversation, setConversation] = useState(null);
+  const [message, setMessage] = useState("");
+  const [subject, setSubject] = useState("Need help with my build");
+  const [topic, setTopic] = useState("Build help");
+  const [status, setStatus] = useState("idle");
+  const [error, setError] = useState("");
+  const endRef = useRef(null);
 
-  const canSend = useMemo(() => {
-    return (
-      form.name.trim().length > 0 &&
-      form.email.trim().length > 0 &&
-      form.message.trim().length > 0
-    );
-  }, [form.email, form.message, form.name]);
+  const token = getUserToken();
 
-  const onSubmit = async (e) => {
-    e.preventDefault();
-    if (!canSend || status === "sending") return;
-
+  const loadData = async () => {
     try {
-      setStatus("sending");
-      const res = await fetch(`${API_BASE}/requests`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          message: form.message.trim(),
+      const [availabilityRes, chatRes] = await Promise.all([
+        fetch(`${API_BASE}/availability`),
+        fetch(`${API_BASE}/chat/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(data.error || `Request failed (${res.status})`);
+      ]);
+
+      const availabilityData = await availabilityRes.json().catch(() => ({}));
+      const chatData = await chatRes.json().catch(() => ({}));
+
+      if (availabilityRes.ok) {
+        setAvailability({
+          availableDevelopers: Number(availabilityData.availableDevelopers || 0),
+          availableUntil: availabilityData.availableUntil || null,
+          isAvailable: Boolean(availabilityData.isAvailable),
+        });
       }
-      setStatus("sent");
-      setForm({ name: "", email: "", message: "" });
-      setTimeout(() => setStatus("idle"), 2800);
-    } catch (err) {
-      console.error(err);
-      setStatus("error");
-      setTimeout(() => setStatus("idle"), 4500);
+
+      if (chatRes.status === 401 || chatRes.status === 403) {
+        setUserToken(null);
+        window.location.replace("/login");
+        return;
+      }
+
+      if (!chatRes.ok) {
+        setError(chatData.error || "Could not load admin chat.");
+        return;
+      }
+
+      setConversation(chatData);
+      if (chatData.subject) {
+        setSubject(chatData.subject);
+      }
+      setError("");
+    } catch {
+      setError("Could not connect to the server.");
     }
   };
 
-  const footerMessage =
-    status === "sent"
-      ? "Saved to the admin queue. We’ll follow up shortly."
-      : status === "error"
-        ? "Could not reach the server. Is the API running on port 5000?"
-        : "We usually reply within 24 hours.";
+  useEffect(() => {
+    void loadData();
+    const interval = setInterval(loadData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [conversation]);
+
+  const sendMessage = async (event) => {
+    event.preventDefault();
+    const content = message.trim();
+    if (!content || status === "sending") return;
+
+    try {
+      setStatus("sending");
+      const res = await fetch(`${API_BASE}/chat/me/messages`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content,
+          subject: conversation?.subject || subject,
+          topic,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 || res.status === 403) {
+        setUserToken(null);
+        window.location.replace("/login");
+        return;
+      }
+      if (!res.ok) {
+        setError(data.error || "Could not send your message.");
+        setStatus("idle");
+        return;
+      }
+
+      setConversation(data);
+      if (data.subject) {
+        setSubject(data.subject);
+      }
+      setMessage("");
+      setStatus("idle");
+      setError("");
+    } catch {
+      setError("Could not send your message.");
+      setStatus("idle");
+    }
+  };
+
+  const availableUntilLabel = useMemo(() => {
+    if (!availability.availableUntil) return null;
+    return new Date(availability.availableUntil).toLocaleString();
+  }, [availability.availableUntil]);
+
+  const activeSubject = conversation?.subject || subject;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col px-4 py-8 md:px-6 md:py-10">
-      <div className="mx-auto w-full max-w-[640px]">
-        <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-6 shadow-welp ring-1 ring-white/[0.04] backdrop-blur-xl md:p-10">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 shadow-welp-inset">
-            Contact Developers
+      <div className="mx-auto grid w-full max-w-7xl gap-6 xl:grid-cols-[360px_1fr]">
+        <aside className="space-y-6">
+          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-6 shadow-welp ring-1 ring-white/[0.04] backdrop-blur-xl">
+            <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400 shadow-welp-inset">
+              Contact Admin
+            </div>
+            <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white">The admin support section is back.</h1>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              Use this space for build help, feature requests, bugs, or anything that needs a real human decision. The admin dashboard now receives these in a dedicated inbox category.
+            </p>
           </div>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-white md:text-3xl">Tell us what you’re building.</h1>
-          <p className="mt-3 max-w-[60ch] text-sm leading-relaxed text-zinc-400">
-            Custom integrations, AI orchestration, or Stripe unlocks end-to-end — send a note and we’ll reply with next
-            steps.
-          </p>
 
-          <form onSubmit={onSubmit} className="mt-8 grid gap-5">
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="grid gap-2 text-[13px] font-medium text-zinc-300">
-                Name
+          <div className="rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-6 shadow-welp ring-1 ring-white/[0.04] backdrop-blur-xl">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Support lanes</div>
+            <div className="mt-4 grid gap-3">
+              {supportTopics.map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setTopic(item)}
+                  className={[
+                    "rounded-xl border px-4 py-3 text-left text-sm transition",
+                    topic === item
+                      ? "border-welp-accent/35 bg-white/[0.08] text-white"
+                      : "border-white/10 bg-black/20 text-zinc-300 hover:bg-white/[0.04]",
+                  ].join(" ")}
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#8ec5ff]/15 bg-[#06111f] p-6 shadow-welp ring-1 ring-white/[0.04]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Developer availability</div>
+            <div className="mt-3 text-5xl font-semibold text-[#8ec5ff]">{availability.availableDevelopers}</div>
+            <p className="mt-3 text-sm text-white/75">
+              {availability.isAvailable
+                ? `${availability.availableDevelopers} developer${availability.availableDevelopers === 1 ? "" : "s"} available now`
+                : "No developers are marked available right now"}
+            </p>
+            <p className="mt-2 text-xs text-zinc-500">
+              {availableUntilLabel ? `Available until ${availableUntilLabel}` : "Availability updates from the admin dashboard."}
+            </p>
+          </div>
+        </aside>
+
+        <section className="flex min-h-[75vh] flex-col rounded-2xl border border-white/[0.08] bg-gradient-to-b from-white/[0.07] to-white/[0.02] shadow-welp ring-1 ring-white/[0.04] backdrop-blur-xl">
+          <div className="border-b border-white/[0.06] px-6 py-5">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Thread</p>
+                <h2 className="mt-1 text-xl font-semibold text-white">{activeSubject}</h2>
+              </div>
+              <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1 text-xs font-semibold text-zinc-300">
+                {topic}
+              </div>
+            </div>
+          </div>
+
+          <div className="border-b border-white/[0.06] px-6 py-5">
+            <div className="grid gap-4 md:grid-cols-[1fr_220px]">
+              <label className="grid gap-2 text-sm text-zinc-300">
+                Subject
                 <input
-                  value={form.name}
-                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                  className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none ring-0 transition placeholder:text-zinc-600 focus:border-welp-accent/50 focus:ring-2 focus:ring-welp-accent/15"
-                  placeholder="Your name"
+                  value={subject}
+                  onChange={(event) => setSubject(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none placeholder:text-zinc-600 focus:border-welp-accent/50"
+                  placeholder="Short summary of what you need"
                 />
               </label>
-              <label className="grid gap-2 text-[13px] font-medium text-zinc-300">
-                Email
-                <input
-                  value={form.email}
-                  onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-                  className="rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-welp-accent/50 focus:ring-2 focus:ring-welp-accent/15"
-                  placeholder="you@company.com"
-                  type="email"
-                />
+              <label className="grid gap-2 text-sm text-zinc-300">
+                Topic
+                <select
+                  value={topic}
+                  onChange={(event) => setTopic(event.target.value)}
+                  className="rounded-xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none focus:border-welp-accent/50"
+                >
+                  {supportTopics.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
+          </div>
 
-            <label className="grid gap-2 text-[13px] font-medium text-zinc-300">
-              What should WELP do?
-              <textarea
-                value={form.message}
-                onChange={(e) => setForm((p) => ({ ...p, message: e.target.value }))}
-                className="min-h-[168px] resize-y rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-600 focus:border-welp-accent/50 focus:ring-2 focus:ring-welp-accent/15"
-                placeholder="Example: Stripe unlock flow, model routing, export to .md…"
-              />
-            </label>
+          <div className="flex-1 overflow-y-auto px-4 py-5 md:px-6">
+            {error ? (
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                {error}
+              </div>
+            ) : null}
 
-            <div className="flex flex-col items-start justify-between gap-4 border-t border-white/[0.06] pt-2 sm:flex-row sm:items-center">
-              <p className="text-[12px] text-zinc-500">{footerMessage}</p>
+            {!conversation ? (
+              <p className="text-sm text-zinc-500">Loading conversation...</p>
+            ) : conversation.messages.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-white/10 bg-black/20 px-6 py-10 text-center text-sm text-zinc-500">
+                Start the thread with what you need, the build context, and what kind of help you want from the admin.
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {conversation.messages.map((entry) => {
+                  const isUser = entry.senderType === "user";
+                  return (
+                    <div key={entry.id} className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+                      <div
+                        className={[
+                          "max-w-[min(100%,760px)] rounded-2xl px-4 py-3 text-sm leading-relaxed",
+                          isUser
+                            ? "bg-gradient-to-br from-welp-accent to-sky-300 text-welp-void"
+                            : "border border-white/[0.08] bg-black/20 text-zinc-100",
+                        ].join(" ")}
+                      >
+                        <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] opacity-70">
+                          {entry.senderLabel}
+                        </div>
+                        <pre className="whitespace-pre-wrap font-sans">{entry.content}</pre>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={endRef} />
+              </div>
+            )}
+          </div>
+
+          <form onSubmit={sendMessage} className="border-t border-white/[0.06] px-4 py-4 md:px-6">
+            <div className="flex items-end gap-3">
+              <div className="min-w-0 flex-1 rounded-2xl border border-white/[0.1] bg-black/25 p-1">
+                <textarea
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  rows={3}
+                  placeholder="Write to the admin..."
+                  className="max-h-48 min-h-[72px] w-full resize-none bg-transparent px-3 py-3 text-sm text-white outline-none placeholder:text-zinc-600"
+                />
+              </div>
               <button
                 type="submit"
-                disabled={!canSend || status === "sending"}
-                className="inline-flex w-full items-center justify-center rounded-full bg-gradient-to-r from-welp-accent to-sky-300 px-6 py-2.5 text-sm font-semibold text-welp-void shadow-[0_12px_40px_rgba(142,197,255,0.22)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
+                disabled={!message.trim() || status === "sending"}
+                className="rounded-xl bg-[#8ec5ff] px-5 py-3 text-sm font-semibold text-[#06111f] transition hover:bg-white disabled:opacity-50"
               >
-                {status === "sending" ? "Sending…" : "Send message"}
+                {status === "sending" ? "Sending..." : "Send"}
               </button>
             </div>
           </form>
-        </div>
+        </section>
       </div>
     </div>
   );
 }
-
-export default Contact;
