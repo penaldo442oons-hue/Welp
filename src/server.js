@@ -26,8 +26,8 @@ const STRIPE_PRICE_CENTS = 200;
 
 const SECRET = process.env.JWT_SECRET || "supersecretkey";
 const APP_BASE_URL =
-  String(process.env.APP_BASE_URL || process.env.FRONTEND_URL || "http://localhost:5173").replace(/\/$/, "");
-const ADMIN_DASHBOARD_URL = String(process.env.ADMIN_DASHBOARD_URL || "http://localhost:5174").replace(/\/$/, "");
+  String(process.env.APP_BASE_URL || process.env.FRONTEND_URL || "https://welp-snowy.vercel.app").replace(/\/$/, "");
+const ADMIN_DASHBOARD_URL = String(process.env.ADMIN_DASHBOARD_URL || "https://adminwelp.vercel.app").replace(/\/$/, "");
 
 const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || "admin").trim();
 const ADMIN_EMAIL = String(process.env.ADMIN_EMAIL || "admin@example.com").trim().toLowerCase();
